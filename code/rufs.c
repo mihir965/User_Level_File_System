@@ -51,7 +51,7 @@ int get_avail_ino() {
 
   // Step 2: Traverse inode bitmap to find an available slot
   for (int i = 0; i < MAX_INUM; i++) {
-    if (get_bitmap(sb.i_bitmap_blk, inode_bitmap) == 0) {
+    if (get_bitmap(inode_bitmap, i) == 0) {
       /* Found the free inode */
       set_bitmap(inode_bitmap, i);
       bio_write(sb.i_bitmap_blk, inode_bitmap);
@@ -168,7 +168,7 @@ int dir_find(uint16_t ino, const char *fname, size_t name_len,
   }
 
   free(entries);
-  return 0;
+  return -1;
 }
 
 int dir_add(struct inode dir_inode, uint16_t f_ino, const char *fname,
@@ -397,10 +397,21 @@ static int rufs_getattr(const char *path, struct stat *stbuf) {
     /* Path not found */
     return -ENOENT;
   // Step 2: fill attribute of file into stbuf from inode
+    memset(stbuf, 0, sizeof(struct stat));
 
-  stbuf->st_mode = S_IFDIR | 0755;
-  stbuf->st_nlink = 2;
-  time(&stbuf->st_mtime);
+    if(node.type==S_IFDIR){
+        stbuf->st_mode = S_IFDIR|0755;
+        stbuf->st_nlink = 2;
+    } else {
+    stbuf->st_mode = S_IFREG | 0644;
+    stbuf->st_nlink = 1;
+  }
+  
+  stbuf->st_uid = getuid();
+  stbuf->st_gid = getgid();
+  stbuf->st_size = node.size;
+  stbuf->st_atime = node.vstat.st_atime;
+  stbuf->st_mtime = node.vstat.st_mtime;
 
   return 0;
 }
@@ -648,7 +659,7 @@ static int rufs_read(const char *path, char *buffer, size_t size, off_t offset,
   time(&file_inode.vstat.st_atim);
   writei(file_inode.ino, &file_inode);
   free(block_buf);
-  return 0;
+  return bytes_read;
 }
 
 static int rufs_write(const char *path, const char *buffer, size_t size,
