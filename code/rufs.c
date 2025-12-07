@@ -397,16 +397,16 @@ static int rufs_getattr(const char *path, struct stat *stbuf) {
     /* Path not found */
     return -ENOENT;
   // Step 2: fill attribute of file into stbuf from inode
-    memset(stbuf, 0, sizeof(struct stat));
+  memset(stbuf, 0, sizeof(struct stat));
 
-    if(node.type==S_IFDIR){
-        stbuf->st_mode = S_IFDIR|0755;
-        stbuf->st_nlink = 2;
-    } else {
+  if (node.type == S_IFDIR) {
+    stbuf->st_mode = S_IFDIR | 0755;
+    stbuf->st_nlink = 2;
+  } else {
     stbuf->st_mode = S_IFREG | 0644;
     stbuf->st_nlink = 1;
   }
-  
+
   stbuf->st_uid = getuid();
   stbuf->st_gid = getgid();
   stbuf->st_size = node.size;
@@ -656,7 +656,7 @@ static int rufs_read(const char *path, char *buffer, size_t size, off_t offset,
     bytes_read += bytes_to_copy;
   }
   // Note: this function should return the amount of bytes you copied to buffer
-  time(&file_inode.vstat.st_atim);
+  time(&file_inode.vstat.st_atime);
   writei(file_inode.ino, &file_inode);
   free(block_buf);
   return bytes_read;
